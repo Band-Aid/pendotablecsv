@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "Pendo Table to CSV Exporter",
+    "version": "1.0",
+    "description": "Select a table from Pendo and export it as a CSV file.",
+    "permissions": [
+      "activeTab",
+      "scripting",
+      "downloads"
+    ],
+    "action": {
+      "default_popup": "popup.html"
+    },
+    "background": {
+      "service_worker": "background.js"
+    }
+  }
+  
