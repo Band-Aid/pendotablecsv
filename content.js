@@ -63,94 +63,87 @@
 
     scrollableContainer.scrollTop = 0;
 
-    const totalScrollHeight = scrollableContainer.scrollHeight;
     const clientHeight = scrollableContainer.clientHeight;
-    const iterations = Math.ceil(totalScrollHeight / clientHeight);
-    let currentIteration = 0;
 
     function collectData() {
-      setTimeout( scrollableContainer.scrollTo(0, currentIteration * clientHeight),100)
-
-      const observer = new MutationObserver((mutations, obs) => {
-        const rows = table.querySelectorAll('tbody tr');
-        if (rows.length > 0) {
-          rows.forEach((row, rowIndex) => {
+      const rows = table.querySelectorAll('tbody tr');
+      if (rows.length > 0) {
+        rows.forEach((row, rowIndex) => {
+         
+          const cols = row.querySelectorAll('td, th');
+          const rowData = [];
+          cols.forEach((col, index) => {
            
-            const cols = row.querySelectorAll('td, th');
-            const rowData = [];
-            cols.forEach((col, index) => {
-             
 
-              let data = '';
-              let linkText = '';
-              let href = '';
-              let link = col.querySelector('a');
+            let data = '';
+            let linkText = '';
+            let href = '';
+            let link = col.querySelector('a');
 
-              let colClone = col.cloneNode(true);
+            let colClone = col.cloneNode(true);
 
-              // Since I am not collecting the headers I need to remove data
-              //Remove elements that contain the '+ x more rule' text.
-              colClone.querySelectorAll('.additional-rules-link').forEach((el) => el.remove());
-              //If value contains Disabled concat with last column - this is for super / apps page
-              if (colClone.querySelector('.pendo-tag--warning')) {
-                let disabled = colClone.querySelector('.pendo-tag--warning').innerText || colClone.querySelector('.pendo-tag--warning').textContent || '';
-                disabled = disabled.trim();
-                data = colClone.innerText || colClone.textContent || '';
-                data = data.trim();
-                data = data.replace(disabled, '').trim();
-                data = data.replace(/"/g, '""');
-                data = data.concat(' - ', disabled);
-                
-              } else
-              
-
-              if (link && link.href) {
-                linkText = link.innerText || link.textContent || '';
-                href = link.href;
-                data = linkText.trim();
-              } else {
-                data = colClone.innerText || colClone.textContent || '';
-                data = data.trim();
-              }
-              data = data.replace(/\+\s*\d+\s*more rule(s)?/i, '').trim();
-
-              // Skip collecting data if it still contains 'more rule'
-              if (/more rule/i.test(data)) {
-                data = '';
-              }
-
+            // Since I am not collecting the headers I need to remove data
+            //Remove elements that contain the '+ x more rule' text.
+            colClone.querySelectorAll('.additional-rules-link').forEach((el) => el.remove());
+            //If value contains Disabled concat with last column - this is for super / apps page
+            if (colClone.querySelector('.pendo-tag--warning')) {
+              let disabled = colClone.querySelector('.pendo-tag--warning').innerText || colClone.querySelector('.pendo-tag--warning').textContent || '';
+              disabled = disabled.trim();
+              data = colClone.innerText || colClone.textContent || '';
+              data = data.trim();
+              data = data.replace(disabled, '').trim();
               data = data.replace(/"/g, '""');
-              rowData.push(data);
+              data = data.concat(' - ', disabled);
+              
+            } else
+            
 
-              // Note: Extract href add 
-              if (href) {
-                href = href.replace(/"/g, '""');
-                rowData.push(href);
-              } else {
-                // blanks can exist
-                rowData.push('');
-              }
-            });
-            collectedData.push(rowData);
+            if (link && link.href) {
+              linkText = link.innerText || link.textContent || '';
+              href = link.href;
+              data = linkText.trim();
+            } else {
+              data = colClone.innerText || colClone.textContent || '';
+              data = data.trim();
+            }
+            data = data.replace(/\+\s*\d+\s*more rule(s)?/i, '').trim();
+
+            // Skip collecting data if it still contains 'more rule'
+            if (/more rule/i.test(data)) {
+              data = '';
+            }
+
+            data = data.replace(/"/g, '""');
+            rowData.push(data);
+
+            // Note: Extract href add 
+            if (href) {
+              href = href.replace(/"/g, '""');
+              rowData.push(href);
+            } else {
+              // blanks can exist
+              rowData.push('');
+            }
           });
-          //#debug
-         // console.log('Collected data:', collectedData);
-
-          obs.disconnect();
-          currentIteration++;
-
-          if (currentIteration > iterations) {
-            isCollecting = false;
-            collectedData = removeDuplicateRows(collectedData);
-           // console.log('Final collected data:', collectedData);
-            chrome.runtime.sendMessage({ action: 'dataCollected', data: collectedData });
-          } else {
-            collectData();
-          }
+          collectedData.push(rowData);
+        });
       }
-      });
 
-      observer.observe(table.querySelector('tbody'), { childList: true, subtree: true });
+      if (scrollableContainer.scrollTop + scrollableContainer.clientHeight >= scrollableContainer.scrollHeight) {
+        isCollecting = false;
+        collectedData = removeDuplicateRows(collectedData);
+        chrome.runtime.sendMessage({ action: 'dataCollected', data: collectedData });
+      } else {
+        setTimeout(() => {
+          const currentScroll = scrollableContainer.scrollTop;
+          const newScroll = currentScroll + clientHeight * 0.8;
+          scrollableContainer.scrollTop = newScroll;
+
+          setTimeout(() => {
+            collectData();
+          }, 300);
+        }, 100);
+      }
     }
 
     collectData();

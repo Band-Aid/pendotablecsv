@@ -10,8 +10,6 @@
 
 4. click on target table
 
-5. Manually scroll to the bottom of the table <-There is a bug here. It won't auto scroll but manually scrolling will pick up the values
+5. The extension will automatically scroll and collect all rows
    
-6. once you get to the bottom, scroll up
-
-7. Should prompt you with the csv
+6. Should prompt you with the csv
