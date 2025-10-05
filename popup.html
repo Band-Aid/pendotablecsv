@@ -1,15 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Table to CSV Exporter</title>
+  <title>Pendo Data Exporter</title>
   <style>
     body { font-family: Arial, sans-serif; min-width: 200px; padding: 10px; }
     button { width: 100%; padding: 10px; margin-top: 10px; }
+    select { width: 100%; padding: 5px; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>Select a Table</h2>
-  <button id="selectTable">Select Table</button>
+  <h2>Select an Option</h2>
+  <select id="options">
+    <optgroup label="Exclude list">
+      <option value="exclude-server-domain">Server Domain</option>
+      <option value="exclude-ip-address">IP address</option>
+      <option value="exclude-visitor-id">Visitor ID</option>
+      <option value="exclude-account-id">Account ID</option>
+    </optgroup>
+    <optgroup label="Metadata">
+      <option value="metadata-visitor">visitor</option>
+      <option value="metadata-account">Account</option>
+    </optgroup>
+    <optgroup label="Staging">
+      <option value="staging-server">staging server</option>
+    </optgroup>
+  </select>
+  <button id="fetchData">Fetch Data</button>
   <script src="popup.js"></script>
 </body>
 </html>
