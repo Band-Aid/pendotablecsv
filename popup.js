@@ -116,7 +116,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
             // Fallback for account-id: if results empty try accountIdGlob endpoint
             if (selectedOption === 'exclude-account-id' && Array.isArray(json.results) && json.results.length === 0) {
-              const fallback2 = `https://app.pendo.io/api/s/${subid}//blacklist/type/accountIdGlob?limit=1000&prefix=`;
+              const fallback2 = `https://app.pendo.io/api/s/${subid}/blacklist/type/accountIdGlob?limit=1000&prefix=`;
               console.log('account-id empty, trying fallback:', fallback2);
               response = await fetch(fallback2, { credentials: 'include', headers: headers, mode: 'cors' });
               if (response.ok) json = await response.json();
