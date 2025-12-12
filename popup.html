@@ -1,31 +1,237 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Pendo Data Exporter</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pendo Export</title>
   <style>
-    body { font-family: Arial, sans-serif; min-width: 200px; padding: 10px; }
-    button { width: 100%; padding: 10px; margin-top: 10px; }
-    select { width: 100%; padding: 5px; margin-top: 10px; }
+    :root {
+      --bg: #0b1220;
+      --card: rgba(255, 255, 255, 0.08);
+      --card2: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.14);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.72);
+      --muted2: rgba(255, 255, 255, 0.55);
+      --brand: #7c5cff;
+      --brand2: #2dd4bf;
+      --danger: #fb7185;
+      --shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      min-width: 340px;
+      color: var(--text);
+      font: 13px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 600px at 20% -20%, rgba(124, 92, 255, 0.55), transparent 60%),
+        radial-gradient(900px 550px at 110% 0%, rgba(45, 212, 191, 0.35), transparent 55%),
+        linear-gradient(180deg, #0b1220 0%, #060a12 100%);
+      padding: 14px;
+    }
+
+    .app {
+      display: grid;
+      gap: 12px;
+      max-width: 420px;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px 0 14px;
+    }
+
+    .title {
+      display: grid;
+      gap: 4px;
+    }
+
+    h1 {
+      font-size: 14px;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle { color: var(--muted); margin: 0; font-size: 12px; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      user-select: none;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+    }
+    .dot.ok { background: var(--brand2); box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.18); }
+    .dot.bad { background: var(--danger); box-shadow: 0 0 0 3px rgba(251, 113, 133, 0.18); }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .content { padding: 14px; display: grid; gap: 12px; }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin: 0 0 6px 0;
+      letter-spacing: 0.2px;
+    }
+
+    .selectWrap {
+      position: relative;
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(15, 23, 42, 0.55);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 38px 10px 12px;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+    }
+
+    select:focus {
+      border-color: rgba(124, 92, 255, 0.75);
+      box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.20);
+    }
+
+    .chev {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted2);
+      font-size: 13px;
+    }
+
+    .help { color: var(--muted2); font-size: 12px; margin: 0; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      color: #0b1220;
+      background: linear-gradient(90deg, var(--brand) 0%, var(--brand2) 100%);
+      box-shadow: 0 10px 26px rgba(124, 92, 255, 0.22);
+      transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover { filter: brightness(1.04); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .status {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.14);
+    }
+
+    .status.show { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .status .msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .status .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; color: var(--muted2); }
+
+    .error {
+      border-color: rgba(251, 113, 133, 0.65) !important;
+      box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.18) !important;
+    }
+
+    a.link {
+      color: rgba(255, 255, 255, 0.78);
+      text-decoration: none;
+    }
+    a.link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h2>Select an Option</h2>
-  <select id="options">
-    <optgroup label="Exclude list">
-      <option value="exclude-server-domain">Server Domain</option>
-      <option value="exclude-ip-address">IP address</option>
-      <option value="exclude-visitor-id">Visitor ID</option>
-      <option value="exclude-account-id">Account ID</option>
-    </optgroup>
-    <optgroup label="Metadata">
-      <option value="metadata-visitor">visitor</option>
-      <option value="metadata-account">Account</option>
-    </optgroup>
-    <optgroup label="Staging">
-      <option value="staging-server">staging server</option>
-    </optgroup>
-  </select>
-  <button id="fetchData">Fetch Data</button>
+  <div class="app card" role="application" aria-label="Pendo Export">
+    <div class="header">
+      <div class="title">
+        <h1>Pendo Export</h1>
+        <p class="subtitle">Export blacklist or metadata as CSV.</p>
+      </div>
+      <div class="pill" id="sitePill" title="Checks whether you're on a Pendo page">
+        <span class="dot" id="siteDot" aria-hidden="true"></span>
+        <span id="siteText">Checking site…</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div>
+        <label for="options">What should we export?</label>
+        <div class="selectWrap">
+          <select id="options" aria-describedby="helpText">
+            <optgroup label="Exclude list">
+              <option value="exclude-server-domain">Server Domain</option>
+              <option value="exclude-ip-address">IP Address</option>
+              <option value="exclude-visitor-id">Visitor ID</option>
+              <option value="exclude-account-id">Account ID</option>
+            </optgroup>
+            <optgroup label="Metadata">
+              <option value="metadata-visitor">Visitor Metadata</option>
+              <option value="metadata-account">Account Metadata</option>
+            </optgroup>
+            <optgroup label="Staging">
+              <option value="staging-server">Staging Server</option>
+            </optgroup>
+          </select>
+          <div class="chev" aria-hidden="true">▾</div>
+        </div>
+        <p class="help" id="helpText">Tip: keep the Pendo tab focused and logged in.</p>
+      </div>
+
+      <div class="actions">
+        <button id="fetchData" type="button">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="status" id="status" role="status" aria-live="polite">
+      <span class="msg" id="statusMsg">Ready.</span>
+      <span class="kbd" id="statusMeta"></span>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

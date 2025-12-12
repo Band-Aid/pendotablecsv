@@ -1,48 +1,104 @@
+const $ = (id) => document.getElementById(id);
+
+const setStatus = (message, meta = '') => {
+  const status = $('status');
+  const statusMsg = $('statusMsg');
+  const statusMeta = $('statusMeta');
+  if (!status || !statusMsg || !statusMeta) return;
+  status.classList.add('show');
+  statusMsg.textContent = message;
+  statusMeta.textContent = meta;
+};
+
+const setSitePill = ({ ok, text }) => {
+  const siteText = $('siteText');
+  const siteDot = $('siteDot');
+  if (siteText) siteText.textContent = text;
+  if (siteDot) {
+    siteDot.classList.remove('ok', 'bad');
+    if (ok === true) siteDot.classList.add('ok');
+    if (ok === false) siteDot.classList.add('bad');
+  }
+};
+
+const setBusy = (busy) => {
+  const button = $('fetchData');
+  const select = $('options');
+  if (button) button.disabled = busy;
+  if (select) select.disabled = busy;
+  if (button) button.textContent = busy ? 'Exporting…' : 'Export CSV';
+};
+
+const showError = (message) => {
+  setSitePill({ ok: false, text: 'Not ready' });
+  setStatus(message);
+  const select = $('options');
+  if (select) select.classList.add('error');
+  setBusy(false);
+};
+
 chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-  const url = tabs[0].url;
-  if (!url.includes('pendo.io')) {
-    document.body.innerHTML = '<p>This extension only works on Pendo sites.</p>';
+  const activeTab = tabs && tabs[0];
+  const url = activeTab && activeTab.url ? String(activeTab.url) : '';
+  let apiBase = null;
+  try {
+    const u = new URL(url);
+    // Use the same scheme + host as the tab (supports app.pendo.io, app.jpn.pendo.io, etc.)
+    apiBase = `${u.protocol}//${u.host}`;
+  } catch (e) {
+    apiBase = null;
+  }
+
+  const hostOk = !!apiBase && apiBase.includes('pendo.io');
+  if (!hostOk) {
+    setSitePill({ ok: false, text: 'Open a Pendo tab' });
+    showError('This extension only works on Pendo sites (app.*.pendo.io).');
     return;
   }
+
+  setSitePill({ ok: true, text: 'Pendo detected' });
 
   // Extract subscription ID from URL
   const match = url.match(/\/s\/(\d+)\//);
   if (!match) {
-    document.body.innerHTML = '<p>Could not find subscription ID in URL.</p>';
+    showError('Could not find subscription ID in the current URL. Open a Pendo page with /s/{subId}/ in the path.');
     return;
   }
   const subid = match[1];
+  setStatus('Ready to export.', `sub ${subid}`);
 
-  document.getElementById('fetchData').addEventListener('click', async () => {
-    const selectedOption = document.getElementById('options').value;
+  $('fetchData').addEventListener('click', async () => {
+    const selectedOption = $('options').value;
     let endpoint = '';
 
     if (selectedOption === 'exclude-server-domain') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/servername/flag/blacklisted?limit=1000&prefix=`;
+      endpoint = `${apiBase}/api/s/${subid}/servername/flag/blacklisted?limit=1000&prefix=`;
     } else if (selectedOption === 'exclude-ip-address') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/blacklist/type/ip?limit=1000&prefix=`;
+      endpoint = `${apiBase}/api/s/${subid}/blacklist/type/ip?limit=1000&prefix=`;
     } else if (selectedOption === 'exclude-visitor-id') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/blacklist/type/visitorId?limit=1000&prefix=`;
+      endpoint = `${apiBase}/api/s/${subid}/blacklist/type/visitorId?limit=1000&prefix=`;
     } else if (selectedOption === 'exclude-account-id') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/blacklist/type/accountId?limit=1000&prefix=`;
+      endpoint = `${apiBase}/api/s/${subid}/blacklist/type/accountId?limit=1000&prefix=`;
     } else if (selectedOption === 'metadata-visitor') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/metadata/visitor/schema?cardinality=false`;
+      endpoint = `${apiBase}/api/s/${subid}/metadata/visitor/schema?cardinality=false`;
     } else if (selectedOption === 'metadata-account') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/metadata/account/schema?cardinality=false`;
+      endpoint = `${apiBase}/api/s/${subid}/metadata/account/schema?cardinality=false`;
     } else if (selectedOption === 'staging-server') {
-      endpoint = `https://app.pendo.io/api/s/${subid}/servername/flag/staging?limit=1000&prefix=`;
+      endpoint = `${apiBase}/api/s/${subid}/servername/flag/staging?limit=1000&prefix=`;
     }
 
     if (!endpoint) {
-      document.body.innerHTML = '<p>Invalid option selected.</p>';
+      showError('Invalid option selected.');
       return;
     }
 
     try {
+      setBusy(true);
+      setStatus('Requesting data…', `sub ${subid}`);
       // Inject script into the page to make the fetch with page cookies
       chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-          func: async (endpoint, selectedOption, subid) => {
+        target: { tabId: activeTab.id },
+          func: async (endpoint, selectedOption, subid, apiBase) => {
           console.log('Fetching endpoint (page context):', endpoint);
           try {
             // Capture PendoXSRFToken cookie
@@ -108,7 +164,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
             // Fallback for visitor-id: if results empty try visitorIdGlob endpoint
             if (selectedOption === 'exclude-visitor-id' && Array.isArray(json.results) && json.results.length === 0) {
-              const fallback = `https://app.pendo.io/api/s/${subid}/blacklist/type/visitorIdGlob?limit=1000&prefix=`;
+              const fallback = `${apiBase}/api/s/${subid}/blacklist/type/visitorIdGlob?limit=1000&prefix=`;
               console.log('visitor-id empty, trying fallback:', fallback);
               response = await fetch(fallback, { credentials: 'include', headers: headers, mode: 'cors' });
               if (response.ok) json = await response.json();
@@ -116,7 +172,7 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
             // Fallback for account-id: if results empty try accountIdGlob endpoint
             if (selectedOption === 'exclude-account-id' && Array.isArray(json.results) && json.results.length === 0) {
-              const fallback2 = `https://app.pendo.io/api/s/${subid}/blacklist/type/accountIdGlob?limit=1000&prefix=`;
+              const fallback2 = `${apiBase}/api/s/${subid}/blacklist/type/accountIdGlob?limit=1000&prefix=`;
               console.log('account-id empty, trying fallback:', fallback2);
               response = await fetch(fallback2, { credentials: 'include', headers: headers, mode: 'cors' });
               if (response.ok) json = await response.json();
@@ -136,12 +192,14 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             chrome.runtime.sendMessage({ action: 'fetchError', error: error.message });
           }
         },
-        args: [endpoint, selectedOption, subid]
+        args: [endpoint, selectedOption, subid, apiBase]
       });
     } catch (error) {
       console.error('Error injecting script:', error);
-      alert('Failed to inject script. Check console for details.');
+      showError('Failed to inject script. Check extension console for details.');
+      return;
     }
+    // background.js will handle download; close the popup for a clean flow
     window.close();
   });
 });
