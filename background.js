@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       dataToConvert = json.results.map(item => ({ id: item.id, name: item.name, type: item.type }));
       } else if (selectedOption === 'staging-server') {
         dataToConvert = json.results.map(item => ({ id: item.id, name: item.name, staging: item.flags && item.flags.staging, lastUpdatedAt: item.lastUpdatedAt }));
-    } else if (selectedOption === 'metadata-visitor') {
+    } else if (['metadata-visitor', 'metadata-account', 'metadata-event'].includes(selectedOption)) {
    
       const rows = [];
       for (const groupName of Object.keys(json || {})) {
@@ -32,20 +32,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       }
       dataToConvert = rows;
-    } else if (selectedOption === 'metadata-account') {
-      const rowsA = [];
-      for (const groupName of Object.keys(json || {})) {
-        const group = json[groupName];
-        if (!group || typeof group !== 'object') continue;
-        for (const fieldName of Object.keys(group)) {
-          const field = group[fieldName];
-          if (!field) continue;
-          if (field.isHidden || field.isDeleted) continue;
-          const displayNameA = (field.DisplayName && String(field.DisplayName).trim()) ? field.DisplayName : fieldName;
-          rowsA.push({ group: groupName, field: fieldName, Type: field.Type || '', DisplayName: displayNameA, sample: field.sample || '' });
-        }
-      }
-      dataToConvert = rowsA;
     } else {
       dataToConvert = json; 
     }
