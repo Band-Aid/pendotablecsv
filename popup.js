@@ -83,6 +83,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       endpoint = `${apiBase}/api/s/${subid}/metadata/visitor/schema?cardinality=false`;
     } else if (selectedOption === 'metadata-account') {
       endpoint = `${apiBase}/api/s/${subid}/metadata/account/schema?cardinality=false`;
+    } else if (selectedOption === 'metadata-event') {
+      endpoint = `${apiBase}/api/s/${subid}/metadata/event/schema?cardinality=false`;
     } else if (selectedOption === 'staging-server') {
       endpoint = `${apiBase}/api/s/${subid}/servername/flag/staging?limit=1000&prefix=`;
     }
@@ -203,4 +205,3 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     window.close();
   });
 });
-  
